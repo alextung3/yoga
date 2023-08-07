@@ -8,6 +8,7 @@ enlarge = 50
 ser = serial.Serial(serial_port, baud_rate)    
 header = r"00fe80b7"
 tail = r"ffff68ff"
+pose_type = ['WarriorII','Tree','ReversePlank','Plank']
 
 def get_yoga_mat_data():
     data = ['']
@@ -88,7 +89,7 @@ def find_bounding_box(heatmap):
         rects.append([x,y,w,h])
     return np.array(rects)
 
-def herotwo_pose_evaluate(center ,rects):
+def warriortwo_pose_eval(center ,rects):
     if len(rects) == 2 and abs( rects[0][2] - rects[1][2])>50:       
         if rects[0][2] > rects[1][2]:
             front_foot = rects[0]
@@ -101,6 +102,18 @@ def herotwo_pose_evaluate(center ,rects):
         if front2center<rear2center and abs(front2center-rear2center)<100:
             return True
     return False
+
+def tree_pose_eval(center,rects):
+    return len(rects)==1
+
+def plank_pose_eval(center,rects):
+    
+# def mat_pose_evalueate(type):
+#     if type == 'WarriorII':
+#     elif type == 'Tree':
+#     elif type == 'ReversePlank':
+#     elif type == 'Plank':
+#     else
 
 
 if __name__ == "__main__":
