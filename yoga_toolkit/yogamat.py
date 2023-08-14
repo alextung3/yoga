@@ -2,23 +2,26 @@ import serial
 import cv2
 import numpy as np
 
-serial_port = 'COM3'
-baud_rate = 115200
-enlarge = 50
-ser = serial.Serial(serial_port, baud_rate)    
-header = r"00fe80b7"
-tail = r"ffff68ff"
-pose_type = ['WarriorII','Tree','ReversePlank','Plank']
+Serial_Port = 'COM3'
+Baud_Rate = 115200
+Enlarge = 50
+   
+Header = r"00fe80b7"
+Tail = r"ffff68ff"
+#Pose_Type = {"WarriorII" : warriortwo_pose_eval,"Tree" : tree_pose_eval,"Plank" :plank_pose_eval}
 
 def get_yoga_mat_data():
     data = ['']
     pre_data = ""
     next_data = ""
-
+    try:
+        ser = serial.Serial(Serial_Port, Baud_Rate) 
+    except :
+        return None
     while True:
         data = ser.read(237).hex()
-        if header in data:
-            arr = data.split(header)
+        if Header in data:
+            arr = data.split(Header)
             pre_data = arr[0]
             next_data = arr[1]
             a = next_data + pre_data
@@ -50,19 +53,20 @@ def find_center(heatmap_arr):
             output_x += w*x
             output_y += w*y
             acum_w+=w
-        return np.array([(output_x/acum_w*enlarge)+25,(output_y/acum_w*enlarge)+25]).astype(int)
+        return np.array([(output_x/acum_w*Enlarge)+25,(output_y/acum_w*Enlarge)+25]).astype(int)
     else:
         return np.array([])
     
 def get_heatmap():
-    data = get_yoga_mat_data()
-   
-    rescaled_array = cv2.resize(data.astype('uint8'), dsize=(18 * enlarge , 12 * enlarge)) 
+    data = get_yoga_mat_data()   
+    if data == None:
+        return "Serail port error!"
+    rescaled_array = cv2.resize(data.astype('uint8'), dsize=(18 * Enlarge , 12 * Enlarge)) 
     rescaled_array = cv2.normalize(rescaled_array, None, 0, 255, norm_type= cv2.NORM_MINMAX, dtype= cv2.CV_8U)
     heatmap = cv2.applyColorMap(rescaled_array, cv2.COLORMAP_JET)
     center = find_center(data)
     rects = find_bounding_box(heatmap)
-    print(herotwo_pose_evaluate(center ,rects))
+    print(warriortwo_pose_eval(center ,rects))
     if len(center)!=0 :
         cv2.circle(heatmap, [center[1], center[0]], 10, (255, 255, 255), 1)
     if  len(rects)> 1:
@@ -107,14 +111,18 @@ def tree_pose_eval(center,rects):
     return len(rects)==1
 
 def plank_pose_eval(center,rects):
-    
-# def mat_pose_evalueate(type):
-#     if type == 'WarriorII':
-#     elif type == 'Tree':
-#     elif type == 'ReversePlank':
-#     elif type == 'Plank':
-#     else
+    return len(rects)>=3
 
+def mat_pose_evalueate(Type,center ,rects):
+    if Type == 'WarriorII':
+        return warriortwo_pose_eval(center ,rects)
+    elif Type == 'Tree':
+        return tree_pose_eval(center,rects)
+    elif Type == 'ReversePlank' or  Type == 'Plank':
+        return plank_pose_eval(center,rects)
+    else:
+        print("input pose does not exist ! Please check your input.")
+        return False
 
 if __name__ == "__main__":
     
